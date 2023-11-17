@@ -153,18 +153,19 @@ class Invader {
     
     // draws the Invader
     void draw_with_rgb(Color body_color, Color eye_color) {
-      matrix.drawPixel(x, y, body_color.to_333()); 
-      matrix.drawPixel(x, y + 1, body_color.to_333());
-      matrix.drawPixel(x, y + 2, body_color.to_333());
-      matrix.drawPixel(x + 1, y + 1, body_color.to_333());
-      matrix.drawPixel(x + 1, y + 3, body_color.to_333()); 
-      matrix.drawPixel(x + 2, y + 1, body_color.to_333()); 
-      matrix.drawPixel(x + 2, y + 3, body_color.to_333()); 
-      matrix.drawPixel(x + 3, y, body_color.to_333()); 
-      matrix.drawPixel(x + 3, y + 1, body_color.to_333()); 
-      matrix.drawPixel(x + 3, y + 2, body_color.to_333());
-      matrix.drawPixel(x + 1, y + 2, eye_color.to_333());,
-      matrix.drawPixel(x + 2, y + 2, eye_color.to_333());
+
+    matrix.drawPixel(x + 1, y, body_color.to_333());
+    matrix.drawPixel(x + 2, y, body_color.to_333());
+    matrix.drawPixel(x, y + 1, body_color.to_333());
+    matrix.drawPixel(x, y + 2, body_color.to_333());
+    matrix.drawPixel(x, y + 3, body_color.to_333()); 
+    matrix.drawPixel(x + 1, y + 2, body_color.to_333());
+    matrix.drawPixel(x + 2, y + 2, body_color.to_333());
+    matrix.drawPixel(x + 3, y + 1, body_color.to_333());
+    matrix.drawPixel(x + 3, y + 2, body_color.to_333());
+    matrix.drawPixel(x + 3, y + 3, body_color.to_333()); 
+    matrix.drawPixel(x + 1, y + 1, eye_color.to_333());
+    matrix.drawPixel(x + 2, y + 1, eye_color.to_333());
     }
 };
 
@@ -200,6 +201,7 @@ class Cannonball {
       x = x_arg; 
       y = y_arg; 
       fired = true;
+      draw();
     }
     
     // moves the Cannonball and detects if it goes off the screen
@@ -223,15 +225,16 @@ class Cannonball {
       // Draw pixels of the instance
       if (fired) {
         matrix.drawPixel(x, y, ORANGE.to_333());
-        matrix.drawPixel(x, y + 1, ORANGE.to_333());
+        matrix.drawPixel(x, y - 1, ORANGE.to_333());
       }
+
     }
     
     // draws black where the Cannonball used to be
     void erase() {
       // Erase all the pixels of the instance
       matrix.drawPixel(x, y, BLACK.to_333());
-      matrix.drawPixel(x, y + 1, BLACK.to_333());
+      matrix.drawPixel(x, y - 1, BLACK.to_333());
     }
 
   private:
@@ -298,20 +301,20 @@ class Player {
     // should use x and y coordinates instead of specific integers
     void draw_with_rgb(Color color) {
       if (x < 1) {
-        matrix.drawPixel(x, y, color.to_333());
-        matrix.drawPixel(x + 1, y, color.to_333());
-        matrix.drawPixel(x , y + 1, color.to_333());
+        matrix.drawPixel(x, y + 15, color.to_333());
+        matrix.drawPixel(x + 1, y + 15, color.to_333());
+        matrix.drawPixel(x , y + 14, color.to_333());
       }
       else if (x >= 31) {
-        matrix.drawPixel(x - 1, y, color.to_333());
-        matrix.drawPixel(x, y, color.to_333());
-        matrix.drawPixel(x, y + 1, color.to_333());
+        matrix.drawPixel(x - 1, y + 15, color.to_333());
+        matrix.drawPixel(x, y + 15, color.to_333());
+        matrix.drawPixel(x, y + 14, color.to_333());
       }
       else {
-      matrix.drawPixel(x - 1, y, color.to_333());
-      matrix.drawPixel(x, y, color.to_333());
-      matrix.drawPixel(x + 1, y, color.to_333());
-      matrix.drawPixel(x , y + 1, color.to_333());
+      matrix.drawPixel(x - 1, y + 15, color.to_333());
+      matrix.drawPixel(x, y + 15, color.to_333());
+      matrix.drawPixel(x + 1, y + 15, color.to_333());
+      matrix.drawPixel(x , y + 14, color.to_333());
       }
     }
 };
@@ -326,23 +329,48 @@ class Game {
     // sets up a new game of Space Invaders
     // Modifies: global variable matrix
     void setupGame() {
-  
+    matrix.fillScreen(BLACK.to_333());
+
+    print_level(level);
+    
+    for (int i = 0; i < NUM_ENEMIES; i++) {
+      if (level == 0) {
+        enemies[i].initialize(0, 0, 1);
+      }
+      enemies[i].draw();
     }
+
+
+
+    }
+
     
     // advances the game simulation one step and renders the graphics
     // see spec for details of game
     // Modifies: global variable matrix
     void update(int potentiometer_value, bool button_pressed) {
-      // Check to see if there is a collision with the player and then update the player
-      // Set last move to whatever potentiometer value is
-      // The potentiometer value gets passed in as x value for the update function
-      // Dividing potentiometer value by 32
- 
-    Player player; 
+    // Check to see if there is a collision with the player and then update the player
+    // Set last move to whatever potentiometer value is
+    // The potentiometer value gets passed in as x value for the update function
+    // Dividing potentiometer value by 32
+    
     player.set_x(potentiometer_value / 32);
     player.draw();
     delay(1);
     player.erase();
+
+    if (button_pressed && //ball has not been fired) {
+      for(int i = 13; i >= 0; i--){
+      ball.fire((potentiometer_value / 32), i);
+      delay(200);
+      // ball.move();
+      ball.erase();
+      }
+    }
+
+    // If ball has been fired and ball time is less than my time
+  
+
     }
 
   private:
@@ -354,10 +382,18 @@ class Game {
 
     // check if Player defeated all Invaders in current level
     bool level_cleared() {
+      for (int i = 0; i < NUM_ENEMIES; i++) {
+        if (enemies[i].get_strength() > 0) {
+          return false;
+        }
+      }
+      return true;
     }
 
     // set up a level
     void reset_level() {
+      print_level(level);
+      print_lives(3);
     }
 };
 
@@ -369,6 +405,7 @@ void setup() {
   Serial.begin(9600);
   pinMode(BUTTON_PIN_NUMBER, INPUT);
   matrix.begin();
+  game.setupGame();
 }
 
 // see https://www.arduino.cc/reference/en/language/structure/sketch/loop/
@@ -391,7 +428,7 @@ void print_level(int level) {
 // displays number of lives
 void print_lives(int lives) {
   matrix.fillScreen(BLACK.to_333());
-  matrix.setCursor(1,0);
+  matrix.setCursor(2,0);
   matrix.print("Lives");
   matrix.setCursor(13, 8);
   matrix.print(lives);
