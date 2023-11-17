@@ -322,79 +322,82 @@ class Player {
 class Game {
   public:
     Game() {
-      level = 0;
+      level = 1;
       time = 0;
     }
     
-    // sets up a new game of Space Invaders
-    // Modifies: global variable matrix
     void setupGame() {
-    matrix.fillScreen(BLACK.to_333());
-
-    print_level(level);
-    
-    for (int i = 0; i < NUM_ENEMIES; i++) {
-      if (level == 0) {
-        enemies[i].initialize(0, 0, 1);
-      }
-      enemies[i].draw();
+        matrix.fillScreen(BLACK.to_333());
+        print_level(level);
+        reset_level();
     }
 
-
-
-    }
-
-    
-    // advances the game simulation one step and renders the graphics
-    // see spec for details of game
-    // Modifies: global variable matrix
     void update(int potentiometer_value, bool button_pressed) {
-    // Check to see if there is a collision with the player and then update the player
-    // Set last move to whatever potentiometer value is
-    // The potentiometer value gets passed in as x value for the update function
-    // Dividing potentiometer value by 32
-    
-    player.set_x(potentiometer_value / 32);
-    player.draw();
-    delay(1);
-    player.erase();
+        player.set_x(potentiometer_value / 32);
+        player.draw();
+        delay(1);
+        player.erase();
 
-    if (button_pressed && //ball has not been fired) {
-      for(int i = 13; i >= 0; i--){
-      ball.fire((potentiometer_value / 32), i);
-      delay(200);
-      // ball.move();
-      ball.erase();
-      }
+        if (button_pressed && !ball.has_been_fired()) {
+            ball.fire(player.get_x(), player.get_y());
+        }
+
+        if (ball.has_been_fired()) {
+            ball.move();
+            // Check collision between ball and invaders
+            for (int i = 0; i < NUM_ENEMIES; i++) {
+                if (enemies[i].get_x() == ball.get_x() && enemies[i].get_y() == ball.get_y()) {
+                    enemies[i].hit();
+                    ball.hit();
+                }
+            }
+        }
+
+        for (int i = 0; i < NUM_ENEMIES; i++) {
+            if (enemies[i].get_y() >= player.get_y()) {
+                player.die();
+                game_over();
+            }
+        }
+
+        // If all invaders are defeated, go to next level
+        if (level_cleared()) {
+            level++;
+            reset_level();
+        }
+
+        // Draw the current state of game entities
+        player.draw();
+        ball.draw();
+        for (int i = 0; i < NUM_ENEMIES; i++) {
+            enemies[i].draw();
+        }
     }
 
-    // If ball has been fired and ball time is less than my time
-  
-
+    void reset_level() {
+        for (int i = 0; i < NUM_ENEMIES; i++) {
+           int x = i % 8 * 4; // 8 invaders per line, spacing 4
+           int y = i / 8 * 3 + 1; // new line every 8 invaders, spacing 3, start from row 1
+           enemies[i].initialize(x, y, level);
+        }
     }
 
-  private:
+    bool level_cleared() {
+        for (int i = 0; i < NUM_ENEMIES; i++) {
+            if (enemies[i].get_strength() > 0) {
+                return false;
+            }
+        }
+        delay(2000); // Pause at end to show level cleared before moving to next level
+        return true;
+    }
+
+private:
     int level;
     unsigned long time;
     Player player;
     Cannonball ball;
     Invader enemies[NUM_ENEMIES];
-
-    // check if Player defeated all Invaders in current level
-    bool level_cleared() {
-      for (int i = 0; i < NUM_ENEMIES; i++) {
-        if (enemies[i].get_strength() > 0) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    // set up a level
-    void reset_level() {
-      print_level(level);
-      print_lives(3);
-    }
 };
 
 // a global variable that represents the game Space Invaders
