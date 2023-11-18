@@ -64,6 +64,9 @@ class Invader {
       y = 0;
       strength = 0;
     }
+    void set_y(int y_arg) {
+      y = y_arg;
+    }
     // sets values for private date members x and y
     Invader(int x_arg, int y_arg) {
       x = x_arg; 
@@ -339,15 +342,24 @@ class Game {
     reset_level();
     matrix.fillScreen(BLACK.to_333());
 
-    for (int i = 0; i < NUM_ENEMIES; i++) {
-      if (level == 1) {
+    if (level == 1) {
+      for (int i = 0; i < 8; i++) {
         enemies[i].initialize(i * 4, -1 , 1);
       }
-      else {
-        
+      for (int q = 8; q < 16; q++) {
+        enemies[q].initialize(q * 4, -1 , 0);
       }
-
     }
+
+    // if (level == 2) {
+    //   for (int j = 0; j < NUM_ENEMIES; j++) {
+    //       if (i == 8) {
+    //       enemies[i].initialize(i * 4, 4, 1);
+    //     }
+    //     enemies[i].initialize(i * 4, 0, 1);
+    //   }
+       
+    // }
            
     }
     
@@ -356,12 +368,7 @@ class Game {
     //   if (level == 1) {
     //     enemies[i].initialize(i * 4, 0, 1);
     //   }
-    //   if (level == 2) {
-    //     if (i == 8) {
-    //       enemies[i].initialize(i * 4, 4, 1);
-    //     }
-    //     enemies[i].initialize(i * 4, 0, 1);
-    //   }
+    //   
     //   enemies[i].draw();
     // }
   
@@ -401,34 +408,105 @@ class Game {
       ball.erase();
       ball.move();
       ball.draw();
-      ball_time = time + 20;
+      ball_time = time + 25;
     }
 
-  // invader time
-    if(time - invader_time >= 2000){
-      for (int i = 0; i < NUM_ENEMIES; i++) {
-        enemies[i].erase();
-        enemies[i].move();
-        enemies[i].draw();
-        invader_time = time;
-      }
-    }
-
-    // If the x and y coordinate of the ball is the same as the x and y coordinate of the enemy
+     // BALL ENEMY COLLISION
     if (ball.has_been_fired()) {
       for (int j = 0; j < NUM_ENEMIES; j++) {
-        if ((enemies[j].get_x() == ball.get_x()) && (enemies[j].get_y() == ball.get_y())) {
+        if (
+        (enemies[j].get_x() == ball.get_x() && enemies[j].get_y() == ball.get_y()) ||
+        (enemies[j].get_x() + 1 == ball.get_x() && enemies[j].get_y() == ball.get_y()) ||
+        (enemies[j].get_x() + 2 == ball.get_x() && enemies[j].get_y() == ball.get_y()) ||
+        (enemies[j].get_x() + 3 == ball.get_x() && enemies[j].get_y() == ball.get_y())
+        ) {
           // the ball is hit
           enemies[j].hit();
-          // the invader is hit
+          if (enemies[j].get_strength() == 0) {
+            enemies[j].initialize(10000, -2000, 0);
+          }
           ball.hit();
         }
       }
     }
 
+  // invader time
+    if(time - invader_time >= 2000){
+      if (level == 1) {
+        for (int j = 0; j < NUM_ENEMIES / 2; j++) {
+          enemies[j].erase();
+          enemies[j].move();
+          enemies[j].draw();
+          invader_time = time;
+        }
+      }
+      if (level > 1) {
+        if (!row2cleared()) {
+        for (int j = 0; j < NUM_ENEMIES / 2; j++) {
+          enemies[j].erase();
+          enemies[j].set_y(0);
+          enemies[j].draw();
+          invader_time = time;
+        }
+        for (int i = 8; i < NUM_ENEMIES; i++) {
+          enemies[i].erase();
+          enemies[i].move();
+          enemies[i].draw();
+          invader_time = time;
+        }
+      }
+      else {
+        for (int j = 0; j < NUM_ENEMIES / 2; j++) {
+          enemies[j].erase();
+          enemies[j].move();
+          enemies[j].draw();
+          invader_time = time;
+        }
+      }
+      }
+      
+      
+    }
 
+    //PLAYER ENEMY COLLISION
+  for (int i = 0; i < NUM_ENEMIES; i++) {
+    if (
+      ((player.get_x() - 1 == enemies[i].get_x()) && (player.get_y() + 15 == enemies[i].get_y() + 3)) ||
+      ((player.get_x() - 1 == enemies[i].get_x() + 3) && (player.get_y() + 15 == enemies[i].get_y() + 3)) ||
+      ((player.get_x() + 1 == enemies[i].get_x()) && (player.get_y() + 15 == enemies[i].get_y() + 3)) ||
+      ((player.get_x() + 1 == enemies[i].get_x() + 3) && (player.get_y() + 15 == enemies[i].get_y() + 3)) ||
+      ((player.get_x() == enemies[i].get_x()) && (player.get_y() + 14 == enemies[i].get_y() + 3)) ||
+      ((player.get_x() == enemies[i].get_x() + 3) && (player.get_y() + 14 == enemies[i].get_y() + 3))
+    ) {
+      player.lose_life();
+        for (int k = 0; k < NUM_ENEMIES / 2; k++) {
+        enemies[k].initialize(k * 4, -1 , 1);
+      }
+      reset_level();
+    }
+  }
 
-  
+    // ENEMY BORDER COLLISION
+    if (enemies[0].get_y() > 12) {
+      player.lose_life();
+      for (int k = 0; k < NUM_ENEMIES / 2; k++) {
+        enemies[k].initialize(k * 4, -1 , 1);
+      }
+      reset_level();
+    }
+
+    if (level_cleared()) {
+      level++;
+      reset_level();
+    }
+
+    if (player.get_lives() == 0) {
+      int loopforever = 0;
+      while (loopforever == 0) {
+        game_over();
+      }
+
+    }
 
     }
 
@@ -446,12 +524,31 @@ class Game {
 
     // check if Player defeated all Invaders in current level
     bool level_cleared() {
-      for (int i = 0; i < NUM_ENEMIES; i++) {
-        if (enemies[i].get_strength() > 0) {
-          return false;
+        int enemy_dead = 0; 
+        for (int i = 0; i < NUM_ENEMIES; i++) {
+          if (enemies[i].get_strength() == 0) {
+            enemy_dead++;
+          }
+        }
+        if (enemy_dead == NUM_ENEMIES) {
+          return true;
+        }
+      return false;
+    } 
+
+    bool row2cleared() {
+      int dead = 0; 
+      for (int i = 8; i < NUM_ENEMIES; i++) {
+        if (enemies[i].get_strength() == 0) {
+          dead++;
         }
       }
-      return true;
+      if (dead == 8) {
+        return true;
+      }
+      else{
+        return false;
+      }
     }
 
     // set up a level
@@ -460,6 +557,36 @@ class Game {
       delay(800);
       print_lives(player.get_lives());
       delay(800);
+      matrix.fillScreen(BLACK.to_333());
+
+      if (level == 2) {
+        int strength = 0; 
+        for (int e = 0; e < NUM_ENEMIES / 2; e++) {
+          int x = e % 8 * 4; 
+          int y = e / 8 * 4 - 1; 
+          if (e % 2 == 0) {
+            strength = 1;
+          }
+          else {
+            strength = 2;
+          }
+          enemies[e].initialize(x, y, strength);
+        }
+        for (int k = 8; k < NUM_ENEMIES; k++) {
+          int x = k % 8 * 4; 
+          int y = k / 8 * 4 - 1; 
+          if (k % 2 == 0) {
+            strength = 2;
+          }
+          else {
+            strength = 1;
+          }
+          enemies[k].initialize(x, y, strength);
+        }
+      
+
+
+      }
     }
 };
 
