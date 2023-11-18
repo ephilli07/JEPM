@@ -96,7 +96,7 @@ class Invader {
     // Moves the Invader down the screen by one row
     // Modifies: y
     void move() {
-      y = y + 1; 
+      y = y + 1;
     }
     
     // draws the Invader if its strength is greater than 0
@@ -173,7 +173,7 @@ class Cannonball {
   public:
     Cannonball() {
       x = 0;
-      y = 0;
+      y = 15;
       fired = false;
     }
     
@@ -201,7 +201,6 @@ class Cannonball {
       x = x_arg; 
       y = y_arg; 
       fired = true;
-      draw();
     }
     
     // moves the Cannonball and detects if it goes off the screen
@@ -272,6 +271,10 @@ class Player {
       erase(); 
       lives = 0;
     }
+
+    void lose_life() {
+      lives = lives - 1;
+    }
     
     // draws the Player
     // calls: draw_with_rgb
@@ -305,7 +308,7 @@ class Player {
         matrix.drawPixel(x + 1, y + 15, color.to_333());
         matrix.drawPixel(x , y + 14, color.to_333());
       }
-      else if (x >= 31) {
+      else if (x > 30) {
         matrix.drawPixel(x - 1, y + 15, color.to_333());
         matrix.drawPixel(x, y + 15, color.to_333());
         matrix.drawPixel(x, y + 14, color.to_333());
@@ -324,80 +327,140 @@ class Game {
     Game() {
       level = 1;
       time = 0;
+      invader_time = 0; 
+      ball_time = 0;
+      last_move = 0;
     }
     
+    // sets up a new game of Space Invaders
+    // Modifies: global variable matrix
     void setupGame() {
-        matrix.fillScreen(BLACK.to_333());
-        print_level(level);
-        reset_level();
-    }
+    matrix.fillScreen(BLACK.to_333());
+    reset_level();
+    matrix.fillScreen(BLACK.to_333());
 
+    for (int i = 0; i < NUM_ENEMIES; i++) {
+      if (level == 1) {
+        enemies[i].initialize(i * 4, -1 , 1);
+      }
+      else {
+        
+      }
+
+    }
+           
+    }
+    
+
+    //   for (int i = 0; i < NUM_ENEMIES; i++) {
+    //   if (level == 1) {
+    //     enemies[i].initialize(i * 4, 0, 1);
+    //   }
+    //   if (level == 2) {
+    //     if (i == 8) {
+    //       enemies[i].initialize(i * 4, 4, 1);
+    //     }
+    //     enemies[i].initialize(i * 4, 0, 1);
+    //   }
+    //   enemies[i].draw();
+    // }
+  
+    
+    
+
+    
+    // advances the game simulation one step and renders the graphics
+    // see spec for details of game
+    // Modifies: global variable matrix
     void update(int potentiometer_value, bool button_pressed) {
-        player.set_x(potentiometer_value / 32);
-        player.draw();
-        delay(1);
-        player.erase();
+    // Check to see if there is a collision with the player and then update the player
+    // Set last move to whatever potentiometer value is
+    // The potentiometer value gets passed in as x value for the update function
+    // Dividing potentiometer value by 32
+    
+    time = millis();
 
-        if (button_pressed && !ball.has_been_fired()) {
-            ball.fire(player.get_x(), player.get_y());
-        }
+    //if (abs(last_move - potentiometer_value > 20)) {
+     // player.erase(); 
+     // player.set_x(potentiometer_value / 32); 
+     // player.draw();
+     // last_move = potentiometer_value;
+    //}
 
-        if (ball.has_been_fired()) {
-            ball.move();
-            // Check collision between ball and invaders
-            for (int i = 0; i < NUM_ENEMIES; i++) {
-                if (enemies[i].get_x() == ball.get_x() && enemies[i].get_y() == ball.get_y()) {
-                    enemies[i].hit();
-                    ball.hit();
-                }
-            }
-        }
+    player.set_x(potentiometer_value / 32);
+    player.draw();
+    delay(1);
+    player.erase();
 
-        for (int i = 0; i < NUM_ENEMIES; i++) {
-            if (enemies[i].get_y() >= player.get_y()) {
-                player.die();
-                game_over();
-            }
-        }
-
-        // If all invaders are defeated, go to next level
-        if (level_cleared()) {
-            level++;
-            reset_level();
-        }
-
-        // Draw the current state of game entities
-        player.draw();
-        ball.draw();
-        for (int i = 0; i < NUM_ENEMIES; i++) {
-            enemies[i].draw();
-        }
+    if (button_pressed && !ball.has_been_fired()) {
+      ball.fire(player.get_x(), player.get_y() + 14);
+      ball_time = time;
     }
 
-    void reset_level() {
-        for (int i = 0; i < NUM_ENEMIES; i++) {
-           int x = i % 8 * 4; // 8 invaders per line, spacing 4
-           int y = i / 8 * 3 + 1; // new line every 8 invaders, spacing 3, start from row 1
-           enemies[i].initialize(x, y, level);
-        }
+    if (ball.has_been_fired() && time > ball_time) {
+      ball.erase();
+      ball.move();
+      ball.draw();
+      ball_time = time + 20;
     }
 
-    bool level_cleared() {
-        for (int i = 0; i < NUM_ENEMIES; i++) {
-            if (enemies[i].get_strength() > 0) {
-                return false;
-            }
-        }
-        delay(2000); // Pause at end to show level cleared before moving to next level
-        return true;
+  // invader time
+    if(time - invader_time >= 2000){
+      for (int i = 0; i < NUM_ENEMIES; i++) {
+        enemies[i].erase();
+        enemies[i].move();
+        enemies[i].draw();
+        invader_time = time;
+      }
     }
 
-private:
+    // If the x and y coordinate of the ball is the same as the x and y coordinate of the enemy
+    if (ball.has_been_fired()) {
+      for (int j = 0; j < NUM_ENEMIES; j++) {
+        if ((enemies[j].get_x() == ball.get_x()) && (enemies[j].get_y() == ball.get_y())) {
+          // the ball is hit
+          enemies[j].hit();
+          // the invader is hit
+          ball.hit();
+        }
+      }
+    }
+
+
+
+  
+
+    }
+
+
+  private:
     int level;
     unsigned long time;
+    unsigned long invader_time; 
+    unsigned long ball_time;
+    int last_move;
     Player player;
     Cannonball ball;
     Invader enemies[NUM_ENEMIES];
+
+
+    // check if Player defeated all Invaders in current level
+    bool level_cleared() {
+      for (int i = 0; i < NUM_ENEMIES; i++) {
+        if (enemies[i].get_strength() > 0) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // set up a level
+    void reset_level() {
+      print_level(level);
+      delay(800);
+      print_lives(player.get_lives());
+      delay(800);
+    }
 };
 
 // a global variable that represents the game Space Invaders
@@ -425,7 +488,7 @@ void print_level(int level) {
   matrix.print("Level");
   matrix.setCursor(13, 8);
   matrix.print(level);
-  delay(200);
+  delay(1000);
 }
 
 // displays number of lives
@@ -435,7 +498,7 @@ void print_lives(int lives) {
   matrix.print("Lives");
   matrix.setCursor(13, 8);
   matrix.print(lives);
-  delay(200);
+  delay(1000);
 }
 
 // displays "game over"
@@ -445,4 +508,3 @@ void game_over() {
   matrix.print("GAME OVER");
   delay(200);
 }
-
